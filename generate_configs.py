@@ -81,13 +81,12 @@ if __name__ == '__main__':
 
 
     # how many configurations per temperature
-    num_conf = 250
+    num_conf = 500
 
     T_c = 2.27
     Temps = np.linspace(min_T, max_T, num_T)
 
     for i, T in tqdm(enumerate(Temps)):
-
         configuration = initialize()
         csize = []
         for _ in range(T_therm):
@@ -98,6 +97,8 @@ if __name__ == '__main__':
             if i%T_A == 0:
                 train_configs.append(np.reshape(configuration.copy(), N**2))
                 train_labels.append(T)
+
+
 
     np.savetxt("labels_%ix%i.txt"%(N,N), train_labels, fmt='%.2e')
     np.savetxt("configs_%ix%i.txt"%(N,N), train_configs, fmt='%.2e')
