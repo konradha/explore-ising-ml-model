@@ -19,6 +19,8 @@ We explore the author's suggestions.
   that this happens in less than 10% of cases
 - overall a very illuminating paper giving us _some_ intuition on what's actually going on for simple NN architectures
   _and_ we have some theory on the data-generating process  
+- more implementation shortcomings: initialization for the Ising model and the paper's suggestions varies; "1HLNN" has
+  no strictly correct way of initializing (needs work on that front to be fully explainable) 
 
 
 
