@@ -30,4 +30,20 @@ Suggested way to run this repo:
 micromamba env create -n repro-ising-ml 
 micromamba activate repro-ising-ml
 micromamba install -c conda-forge numpy tqdm pytorch scikit-learn matplotlib
+# e.g.
+python apply_model.py 20 500 100 20 mlnn
 ```
+
+
+#### Comparing a little
+The "explanatory" part for the network with a hidden layer is fuzzy. Results are not consistent. Trained on the
+same data, same procedure, only the Pytorch-given seed differs -- the results are sometimes overwhelmingly different.
+
+
+Compare
+![image info](./compare_mlnn_args/2ca847_hidden_final_units.png)
+![image info](./compare_mlnn_args/2ca847_preds.png)
+
+to
+![image info](./compare_mlnn_args/03fc00_hidden_final_units.png)
+![image info](./compare_mlnn_args/03fc00_preds.png)
