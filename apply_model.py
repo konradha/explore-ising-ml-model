@@ -4,7 +4,12 @@ import numpy as np
 from sys import argv
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 19})
+
 from matplotlib import colormaps
+
+from scipy.signal import savgol_filter
+from scipy.interpolate import make_interp_spline
 
 import torch
 import torch.nn as nn
@@ -12,9 +17,15 @@ import torch.optim as optim
 from tqdm import tqdm
 
 from copy import deepcopy
+from time import time
 
-from logging import Logger
-logger = Logger(__name__)
+
+
+def short_time_uuid():
+    return hex(int(time() * 10000))[-6:]
+
+def moving_average(x, w):
+    return np.convolve(x, np.ones(w), 'valid') / w
 
 if __name__ == '__main__':
     if len(argv) != 6:
@@ -119,7 +130,7 @@ if __name__ == '__main__':
         rand_idx = torch.randperm(y.size()[0])
         X_tensor = X[rand_idx] 
         y_tensor = y[rand_idx] 
-        
+       
         if model_name == "slnn":
             exclude_idx = torch.sum(X_tensor / L ** 2, axis=1) >= 0         
             X_tensor = X_tensor[exclude_idx][(int(X_tensor[exclude_idx].shape[0]) % batch_size):]
@@ -138,8 +149,8 @@ if __name__ == '__main__':
                 optimizer.step()
             scheduler.step()
             
-            if (epoch + 1) % 10 == 0:
-                print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
+            #if (epoch + 1) % 10 == 0:
+            #    print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
     
     slnn = SLNN(input_size=L ** 2)
     mlnn = MLNN(input_size=L ** 2, hidden_size=2)
@@ -157,12 +168,8 @@ if __name__ == '__main__':
     train_data_ferro = []
     train_data_para  = []
     test_data = []
-
-    acceptable_restrict = [] 
+ 
     for i, t in enumerate(T_range):
-        idx = np.sum(X[i * num_conf : (i + 1) * num_conf, :], axis=1) >= 0
-        acceptable_restrict.append(idx)
-
         if t < ferro_hi:
             train_data_ferro.append(X[i * num_conf : (i + 1) * num_conf, :])
         elif t > para_lo:
@@ -181,22 +188,14 @@ if __name__ == '__main__':
     train_data  = torch.cat((train_data_ferro, train_data_para)) 
     train_label = torch.cat((y_ferro, y_para)) 
     train_model(model, train_data, train_label, model_name, num_epochs)
-   
-
-    idx = np.sum(X, axis=1) >= 0
+    
     if model_name == "hlnn":
         test_outputs = model(torch.tensor(X, dtype=torch.float32))
     else:
+        idx = np.sum(X, axis=1) >= 0
         test_outputs = model(torch.tensor(X[idx], dtype=torch.float32))
     
     test_outputs = test_outputs.detach().numpy() 
-    plt.scatter(np.linspace(0, test_outputs.shape[0], test_outputs.shape[0]), test_outputs)
-    plt.show()
-
-    plt.cla()
-
-    
-
 
     if model_name == "slnn":
         idx = np.sum(X, axis=1) >= 0
@@ -208,26 +207,68 @@ if __name__ == '__main__':
         z1 = (X[idx] @ w)
         z2 = (X[idx] @ w + b) 
         
-        plt.scatter(range(len(z1)), z1)
-        plt.scatter(range(len(z2)), z2)
-        plt.show()
-
-        
         x = X @ w / np.max(X @ w)
         y = np.sum(X, axis=1) / L ** 2
+
+        fig, axs = plt.subplots(nrows=2) 
+        axs[0].scatter(range(len(z1)), z1)
+        axs[0].scatter(range(len(z2)), z2)
+
+        axs[1].scatter(np.linspace(0, test_outputs.shape[0], test_outputs.shape[0]), test_outputs)
+        plt.show()
+
+        plt.cla()
         plt.scatter(x, y)
         plt.show()
          
 
-
     else:
+        uuid = short_time_uuid()
+
+        plt.scatter(np.linspace(0, test_outputs.shape[0], test_outputs.shape[0]), test_outputs)
+        plt.xlabel("#")
+        plt.ylabel("<P(F)>")
+        plt.tight_layout()
+        plt.grid()
+        fname = f"compare_mlnn_args/{uuid}_preds.png" 
+        plt.savefig(fname,) 
+
+        plt.cla()
         args1, args3 = get_pre_activation_mlnn(model, torch.tensor(X, dtype=torch.float32))
         mags = np.sum(X, axis=1) / L ** 2
         args3 = model.sigmoid(args3)
-    
-        plt.scatter(mags, args3[:, 0].detach().numpy(), label="final")
-        plt.scatter(mags, args1[:, 0].detach().numpy(), label="u1")
-        plt.scatter(mags, args1[:, 1].detach().numpy(), label="u2")
-        plt.legend()
-        plt.show()
+     
+        #plt.scatter(mags, args1[:, 0].detach().numpy(), label="unit 1", marker="x", color="blue", alpha=.6)
+        #plt.scatter(mags, args1[:, 1].detach().numpy(), label="unit 2", marker="o", color="red", alpha=.6)
+        #plt.scatter(mags, args3[:, 0].detach().numpy(), label="final", color="green",)
+
+        #plt.legend()
+        #plt.xlabel("m")
+        #plt.ylabel("<P(F)>")
+        #plt.tight_layout() 
+        #fname = f"hidden_final_units_{short_time_uuid()}.pdf" 
+        #plt.savefig(fname)
         
+ 
+        sort_idx = np.argsort(mags)
+        mags_sorted = mags[sort_idx]
+        args1_sorted = args1.detach().numpy()[sort_idx]
+        args3_sorted = args3.detach().numpy()[sort_idx]
+
+        window_size = 100
+        ma_args1_1 = moving_average(args1_sorted[:, 0], window_size)[::window_size] 
+        ma_args1_2 = moving_average(args1_sorted[:, 1], window_size)[::window_size]
+        ma_args3   = moving_average(args3_sorted[:, 0], window_size)[::window_size]
+        ma_mags    = moving_average(mags_sorted, window_size)[::window_size]
+
+        plt.plot(ma_mags, ma_args1_1, label="unit 1", color="blue", marker="^")
+        plt.plot(ma_mags, ma_args1_2, label="unit 2", color="red", marker="o")
+        plt.plot(ma_mags, ma_args3, label="final",   color="green",)
+        plt.legend()
+        plt.xlabel("m")
+        plt.ylabel("<P(F)>")
+        plt.tight_layout()
+        plt.grid()
+        fname = f"compare_mlnn_args/{uuid}_hidden_final_units.png" 
+        plt.savefig(fname,)  
+        torch.save(model, f'compare_mlnn_args/{uuid}_full_model.pth')

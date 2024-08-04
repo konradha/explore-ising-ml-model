@@ -11,6 +11,8 @@ We explore the author's suggestions.
   of M -- here, the particle number is not conserved so this is a little less visible)
 - elegant idea of using a "SLNN" (a single layer NN) to predict the model's phase -- the SLNN is a simple logistic
   regression and it works nicely on data which has positive magnetization!
+- SLNN args to activation function scale differently in this implementation -- might be due to other parameter samplers
+  (maybe inherent in Pytorch as original work uses keras)
 - the straightforward idea to extend the ML model by a 2-unit hidden layer can immediately predict the nice properties
   of the Ising model
 - the graph on "inferred probabilities" is, at times, not reproducible -- we strongly depend on the seed but I wager
