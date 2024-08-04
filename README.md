@@ -30,8 +30,24 @@ micromamba env create -n repro-ising-ml
 micromamba activate repro-ising-ml
 micromamba install -c conda-forge numpy tqdm pytorch scikit-learn matplotlib
 # e.g.
+python generate_configs.py
 python apply_model.py 20 500 100 20 mlnn
+
+# args are: L num_configs num_T num_epochs model
+# L           -- 2d Ising model PBC grid with size L * L (fixed in `generate_configs.py` -- change at will
+# num_configs -- number of configurations to generate per temperature 
+# num_T       -- number of temperatures to generate samples for in [0.05, 5]
+# num_epochs  -- number of training epochs 
+# model       -- either "slnn" or "mlnn"
 ```
+
+`apply_model.py` runs a training loop for `num_epochs` on data in the following way:
+1. SLNN: here we only take configurations into account that have positive magnetization (see paper for reasoning
+   on separating hyperplane)
+2. MLNN: takes all configurations into account
+
+For both cases we sample from data equidistant from `T_c`, ie. we only train on data in the union of the intervals
+[0.05, 1.] and [4., 5.].
 
 
 #### Comparing a little
