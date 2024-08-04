@@ -1,3 +1,5 @@
+from models import SLNN, MLNN, get_pre_activation_slnn, get_pre_activation_mlnn 
+
 import numpy as np
 from sys import argv
 from sklearn.decomposition import PCA
@@ -10,65 +12,25 @@ import torch.optim as optim
 from tqdm import tqdm
 
 from copy import deepcopy
-import logging
-logger = logging.Logger(__name__)
 
-
-class SLNN(nn.Module):
-    def __init__(self, input_size):
-        super(SLNN, self).__init__()
-        self.linear = nn.Linear(input_size, 1)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        return self.sigmoid(self.linear(x)).squeeze(-1)
-
-class MLNN(nn.Module):
-    #def __init__(self, input_size, hidden_size):
-    #    super(MLNN, self).__init__()
-    #    self.hidden = nn.Linear(input_size, hidden_size)
-    #    self.output = nn.Linear(hidden_size, 1)
-    #    self.sigmoid = nn.Sigmoid()
-
-    #def forward(self, x):
-    #    x = self.sigmoid(self.hidden(x))
-    #    return self.sigmoid(self.output(x)).squeeze(-1)
-
-    def __init__(self, input_size, hidden_size=2):
-        super(MLNN, self).__init__()
-        self.hidden = nn.Linear(input_size, hidden_size)
-        self.output = nn.Linear(hidden_size, 1)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        hidden = self.sigmoid(self.hidden(x))
-        return self.sigmoid(self.output(hidden)).squeeze(-1)
-
-
-def register_activation_hook(model):
-    args = dict()
-    def hook_fn(module, inp, out):
-        args[module] = inp[0].detach().numpy()
-
-    for name, module in model.named_modules():
-        if isinstance(module, nn.Sigmoid): 
-            module.register_forward_hook(hook_fn)
-        logger.debug(name)
-    return args
-
-def get_sigmoid_args(model, test_data):
-    activation_args = register_activation_hook(model)
-    with torch.no_grad():
-        model(test_data)
-    return activation_args
-
+from logging import Logger
+logger = Logger(__name__)
 
 if __name__ == '__main__':
+    if len(argv) != 6:
+        print("launch with argv: L, num_conf, num_T, num_epochs, model_name")
+        assert len(argv) == 6 
+
     L = int(argv[1])
     num_conf = int(argv[2])
     num_T = int(argv[3])
     num_epochs = int(argv[4])
+    model_name = str(argv[5])
     explore = False
+
+     
+        
+     
 
     fname = f"configs_{L}x{L}.txt"
     data = np.loadtxt(fname, delimiter=' ')
@@ -85,10 +47,8 @@ if __name__ == '__main__':
         x_backup = deepcopy(X)
         X = X[np.sum(X, axis=1) >= 0]
         M = X.T @ X
-        pca = PCA(n_components=10)
-        #x_t = pca.fit_transform(M)
-        x_t = pca.fit(M)
-        # eigenvalues of X (pretty surely)
+        pca = PCA(n_components=10) 
+        x_t = pca.fit(M) 
         e_v = pca.explained_variance_
         s = np.sum(e_v)
 
@@ -151,16 +111,16 @@ if __name__ == '__main__':
 
 
 
-    def train_model(model, X, y, epochs=50, restrict = None, learning_rate=1e-2, batch_size=16,):
+    def train_model(model, X, y, model_name, epochs=50, learning_rate=1e-2, batch_size=16,):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
          
         rand_idx = torch.randperm(y.size()[0])
         X_tensor = X[rand_idx] 
-        y_tensor = y[rand_idx]        
-
-        if restrict is not None:
+        y_tensor = y[rand_idx] 
+        
+        if model_name == "slnn":
             exclude_idx = torch.sum(X_tensor / L ** 2, axis=1) >= 0         
             X_tensor = X_tensor[exclude_idx][(int(X_tensor[exclude_idx].shape[0]) % batch_size):]
             y_tensor = y_tensor[exclude_idx][(int(y_tensor[exclude_idx].shape[0]) % batch_size):]
@@ -183,8 +143,10 @@ if __name__ == '__main__':
     
     slnn = SLNN(input_size=L ** 2)
     mlnn = MLNN(input_size=L ** 2, hidden_size=2)
-    model = mlnn
-    model_name = "mlnn"
+    if model_name == "slnn":
+        model = slnn
+    else:
+        model = mlnn
     
  
     T_c = 2.269
@@ -212,44 +174,33 @@ if __name__ == '__main__':
     train_data_para  = torch.tensor(np.array(train_data_para),  dtype=torch.float32).reshape(-1, L ** 2)
     test_data        = torch.tensor(np.array(test_data),        dtype=torch.float32).reshape(-1, L ** 2)
 
-    
-    def get_pre_activation(model, x, model_name="slnn"):
-        assert model_name == "slnn"
-        with torch.no_grad():
-            pre_activation = model.linear(x)
-            #output = model.sigmoid(pre_activation).squeeze(-1)
-        return pre_activation.squeeze(-1)
-
-    def get_pre_activation_hidden(model, x):
-        pre1 = model.sigmoid(model.hidden(x))
-        pre3 = model.output(pre1)
-        return pre1, pre3
-
-    
-
+      
     y_ferro = torch.ones((train_data_ferro.shape[0]))
     y_para  = 0 * torch.ones((train_data_para.shape[0]))
 
     train_data  = torch.cat((train_data_ferro, train_data_para)) 
-    train_label = torch.cat((y_ferro, y_para))
-    
-    if model_name == "hlnn":
-        train_model(model, train_data, train_label, num_epochs,)
-    else:
-        train_model(model, train_data, train_label, num_epochs, 1)
+    train_label = torch.cat((y_ferro, y_para)) 
+    train_model(model, train_data, train_label, model_name, num_epochs)
+   
 
     idx = np.sum(X, axis=1) >= 0
-    test_outputs = model(torch.tensor(X[idx], dtype=torch.float32))
-    #test_outputs = model(test_data)
-    test_outputs = test_outputs.detach().numpy()
+    if model_name == "hlnn":
+        test_outputs = model(torch.tensor(X, dtype=torch.float32))
+    else:
+        test_outputs = model(torch.tensor(X[idx], dtype=torch.float32))
     
+    test_outputs = test_outputs.detach().numpy() 
     plt.scatter(np.linspace(0, test_outputs.shape[0], test_outputs.shape[0]), test_outputs)
     plt.show()
 
     plt.cla()
+
+    
+
+
     if model_name == "slnn":
         idx = np.sum(X, axis=1) >= 0
-        args = get_pre_activation(model, torch.tensor(X[idx], dtype=torch.float32))
+        args = get_pre_activation_slnn(model, torch.tensor(X[idx], dtype=torch.float32))
         w = model.linear.weight.detach().numpy().flatten()
         b = model.linear.bias.item()
         w_avg = np.mean(w)
@@ -270,7 +221,7 @@ if __name__ == '__main__':
 
 
     else:
-        args1, args3 = get_pre_activation_hidden(model, torch.tensor(X, dtype=torch.float32))
+        args1, args3 = get_pre_activation_mlnn(model, torch.tensor(X, dtype=torch.float32))
         mags = np.sum(X, axis=1) / L ** 2
         args3 = model.sigmoid(args3)
     
@@ -280,22 +231,3 @@ if __name__ == '__main__':
         plt.legend()
         plt.show()
         
-
-
-    
-    #sigmoid_args = get_sigmoid_args(model, torch.tensor(X, dtype=torch.float32))  
-    #sigmoid_args = [v for v in sigmoid_args.values()][0]
-    #
-
-    #my_args = np.sum(np.array(X), axis=1) / L ** 2 
-    #plt.scatter(range(len(my_args)), my_args)
-    #plt.show()
-
-    #plt.cla()
-    #w = model.linear.weight    
-    #out = torch.matmul(torch.tensor(X, dtype=torch.float32), w.t())
-    #m = torch.max(out)
-    #out = out.detach().numpy() / m.detach().numpy() 
-    #plt.scatter(range(len(out)), out)
-    #plt.show()
-    #
