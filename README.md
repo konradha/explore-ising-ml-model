@@ -41,9 +41,19 @@ same data, same procedure, only the Pytorch-given seed differs -- the results ar
 
 
 Compare
-![image info](./compare_mlnn_args/2ca847_hidden_final_units.png)
-![image info](./compare_mlnn_args/2ca847_preds.png)
+
+<table>
+  <tr>
+    <td><img src="./compare_mlnn_args/2ca847_hidden_final_units.png" alt="hidden final units 1"></td>
+    <td><img src="./compare_mlnn_args/2ca847_preds.png" alt="preds 1"></td>
+  </tr>
+</table>
 
 to
-![image info](./compare_mlnn_args/03fc00_hidden_final_units.png)
-![image info](./compare_mlnn_args/03fc00_preds.png)
+
+<table>
+  <tr>
+    <td><img src="./compare_mlnn_args/03fc00_hidden_final_units.png" alt="hidden final units 2"></td>
+    <td><img src="./compare_mlnn_args/03fc00_preds.png" alt="preds 2"></td>
+  </tr>
+</table>
