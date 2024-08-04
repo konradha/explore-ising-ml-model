@@ -3,10 +3,9 @@ by Alamino from 2024.
 
 We explore the author's suggestions.
 
-- no theory work here.
-- simulation employs [Wolff cluster updates](https://en.wikipedia.org/wiki/Wolff_algorithm) (I am lazy) -- just call `python generate_configs.py` 
+- simulation employs [Wolff cluster updates](https://en.wikipedia.org/wiki/Wolff_algorithm) (lazy variant) -- just call `python generate_configs.py` 
 - the simulation generates the right number of configs; it however is not aware of the sign such that the SLNN is
-  trained on less configs than it should -- the work however still reproduces favorably (again, I am lazy) 
+  trained on less configs than it should -- the work however still reproduces favorably (lazy variant) 
 - PCA has a shortcoming here (secondary literature suggests nice separability for different projections on eigenvectors
   of M -- here, the particle number is not conserved so this is a little less visible)
 - elegant idea of using a "SLNN" (a single layer NN) to predict the model's phase -- the SLNN is a simple logistic
