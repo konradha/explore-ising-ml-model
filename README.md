@@ -15,8 +15,8 @@ We explore the author's suggestions.
   (maybe inherent in Pytorch as original work uses keras)
 - the straightforward idea to extend the ML model by a 2-unit hidden layer can immediately predict the nice properties
   of the Ising model
-- the graph on "inferred probabilities" is, at times, not reproducible -- we strongly depend on the seed but I wager
-  that this happens in less than 10% of cases
+- the graph on "inferred probabilities" is, at times, not reproducible -- we strongly depend on the seed;
+  see below
 - overall a very illuminating paper giving us _some_ intuition on what's actually going on for simple NN architectures
   _and_ we have some theory on the data-generating process  
 - more implementation shortcomings: initialization for the Ising model and the paper's suggestions varies; "1HLNN" has
@@ -57,3 +57,6 @@ to
     <td><img src="./compare_mlnn_args/03fc00_preds.png" alt="preds 2"></td>
   </tr>
 </table>
+
+The test data here is now all of the data points that have been excluded from training, ie. all configs generated
+for temperatures between 1 and 4.
