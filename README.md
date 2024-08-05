@@ -34,11 +34,13 @@ python generate_configs.py
 python apply_model.py 20 500 100 20 mlnn
 
 # args are: L num_configs num_T num_epochs model
+
 # L           -- 2d Ising model PBC grid with size L * L (fixed in `generate_configs.py` -- change at will
 # num_configs -- number of configurations to generate per temperature 
 # num_T       -- number of temperatures to generate samples for in [0.05, 5]
 # num_epochs  -- number of training epochs 
 # model       -- either "slnn" or "mlnn"
+
 ```
 
 `apply_model.py` runs a training loop for `num_epochs` on data in the following way:
