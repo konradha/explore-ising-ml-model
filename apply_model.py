@@ -35,8 +35,8 @@ if __name__ == '__main__':
     num_T = int(argv[3])
     num_epochs = int(argv[4])
     model_name = str(argv[5])
-    explore = False
-    show_fig = False
+    explore = True
+    show_fig = True
 
     fname = f"configs_{L}x{L}.txt"
     data = np.loadtxt(fname, delimiter=' ')
@@ -57,22 +57,29 @@ if __name__ == '__main__':
         s = np.sum(e_v)
 
         plt.scatter(range(len(e_v)), e_v / s)
-        plt.show()
+        plt.grid()
+        plt.tight_layout()
+
+        if show_fig:
+            plt.show()
+        else:
+            plt.savefig("data_pca_eigenvalues.png", dpi=500)
+            plt.cla(); plt.clf()
+        
 
         lam, eigenv = np.linalg.eig(M)
 
         y_ls = []
         for l in range(4):
-            # y_l = X.dot(eigenv[:, l]) # -- something's off here
             y_l = X.dot(pca.components_[l])
             y_ls.append(y_l)
 
-        fig, axs = plt.subplots(nrows=4, ncols=4)
+        fig, axs = plt.subplots(nrows=4, ncols=4, figsize=(10,10))
 
         cmap = colormaps['RdYlBu']
 
         colors = cmap(-(T_range - T_high) / (T_high - T_low))
-        mult_fact = 1.  # 10. -- 10 as maybe in original paper?
+        mult_fact = 10.
         for li in range(4):
             for lj in range(4):
                 if li <= lj:
@@ -85,7 +92,13 @@ if __name__ == '__main__':
                                              num_conf: (ti + 1) * num_conf],
                         color=colors[ti], s=.5)
 
-        plt.show()
+        plt.grid()
+        plt.tight_layout()
+        if show_fig:
+            plt.show()
+        else:
+            plt.savefig("data_pca_eigenvalues.png", dpi=500)
+            plt.cla(); plt.clf()
 
         ts = np.linspace(T_low, T_high, num_T)
         ps, psigma = [], []
@@ -103,14 +116,23 @@ if __name__ == '__main__':
         plt.xlabel("T")
         plt.ylabel("<m>")
         plt.vlines(2.269, ymin=0, ymax=1, color="yellow")
-        plt.show()
+        if show_fig:
+            plt.show()
+        else:
+            None
+        plt.cla(); plt.clf()
+       
 
         fig, axs = plt.subplots(ncols=2, nrows=2)
         for i in range(2):
             axs[0][i].imshow(data[2 * num_conf + i].reshape((L, L)))
         for i in range(2):
             axs[1][i].imshow(data[-1 - i].reshape((L, L)))
-        plt.show()
+        if show_fig:
+            plt.show()
+        else:
+            plt.cla(); plt.clf()
+        
         X = x_backup
 
     def train_model(model, X, y, model_name, epochs=50,
