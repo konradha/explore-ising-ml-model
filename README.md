@@ -50,7 +50,7 @@ For both cases we sample from data equidistant from `T_c`, ie. we only train on 
 [0.05, 1.] and [4., 5.].
 
 
-#### Comparing a little
+#### Comparing inconsistencies
 The "explanatory" part for the network with a hidden layer is fuzzy. Results are not consistent. Trained on the
 same data, same procedure, only the Pytorch-given seed differs -- the results are sometimes overwhelmingly different.
 
@@ -75,3 +75,14 @@ to
 
 The test data here is now all of the data points that have been excluded from training, ie. all configs generated
 for temperatures between 1 and 4.
+
+
+#### Analysis for SLNN
+For the single-layer NN, results are remarkably similar.
+
+<table>
+  <tr>
+    <td><img src="./magn_regression.png" alt="linear regression on predictions"></td>
+    <td><img src="./predictor_slnn.png" alt="predictions and arguments to activation function with and without translation"></td>
+  </tr>
+</table>
