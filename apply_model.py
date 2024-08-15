@@ -35,7 +35,7 @@ if __name__ == '__main__':
     num_T = int(argv[3])
     num_epochs = int(argv[4])
     model_name = str(argv[5])
-    explore = True
+    explore = False
     show_fig = True
 
     fname = f"configs_{L}x{L}.txt"
@@ -48,9 +48,39 @@ if __name__ == '__main__':
 
     X = data
     if explore:
+        # TODO: use actual covariance matrix definition as in publication!
         x_backup = deepcopy(X)
+
         X = X[np.sum(X, axis=1) >= 0]
         M = X.T @ X
+
+        #s_bar = np.zeros((L ** 2,))
+        #C = np.zeros((L ** 2, L ** 2))
+        #for t in range(num_T):
+        #    for c in range(num_conf):
+        #        s_bar += X[t * num_conf + c] 
+        #s_bar /= (num_conf * num_T)
+        #for t in range(num_T):
+        #    for c in range(num_conf): 
+        #        conf = X[t * num_conf + c] 
+        #        r = (conf - s_bar) * ((conf - s_bar).T) 
+        #        C += r
+        #C /= (num_conf * num_T)
+        #pca = PCA(n_components=10)
+        #x_t = pca.fit(C)
+        #e_v = pca.explained_variance_
+        #s = np.sum(e_v)
+        #plt.scatter(range(len(e_v)), e_v / s)
+        #plt.grid()
+        #plt.tight_layout()
+
+        
+        
+        
+        
+
+
+ 
         pca = PCA(n_components=10)
         x_t = pca.fit(M)
         e_v = pca.explained_variance_
@@ -142,12 +172,8 @@ if __name__ == '__main__':
         scheduler = torch.optim.lr_scheduler.ExponentialLR(
             optimizer, gamma=0.9)
 
-        rand_idx = torch.randperm(y.size()[0])
-        X_tensor = X[rand_idx]
-        y_tensor = y[rand_idx]
-
         if model_name == "slnn":
-            exclude_idx = torch.sum(X_tensor / L ** 2, axis=1) >= 0
+            exclude_idx = torch.sum(X_tensor, axis=1) >= 0
             X_tensor = X_tensor[exclude_idx][(
                 int(X_tensor[exclude_idx].shape[0]) % batch_size):]
             y_tensor = y_tensor[exclude_idx][(
@@ -200,7 +226,7 @@ if __name__ == '__main__':
     train_data_para = torch.tensor(
         np.array(train_data_para), dtype=torch.float32).reshape(-1, L ** 2)
     test_data = torch.tensor(
-        np.array(test_data), dtype=torch.float32).reshape(-1, L ** 2)
+        np.array(test_data), dtype=torch.float32).reshape(-1, L ** 2) 
 
     y_ferro = torch.ones((train_data_ferro.shape[0]))
     y_para = 0 * torch.ones((train_data_para.shape[0]))
@@ -208,15 +234,15 @@ if __name__ == '__main__':
     train_data = torch.cat((train_data_ferro, train_data_para))
     train_label = torch.cat((y_ferro, y_para))
     train_model(model, train_data, train_label, model_name, num_epochs)
-
-    if model_name == "hlnn":
+    
+    if model_name == "mlnn":
         test_outputs = model(torch.tensor(X, dtype=torch.float32))
     else:
         idx = np.sum(X, axis=1) >= 0
         test_outputs = model(torch.tensor(X[idx], dtype=torch.float32))
 
+    
     test_outputs = test_outputs.detach().numpy()
-
     if model_name == "slnn":
         idx = np.sum(X, axis=1) >= 0
         args = get_pre_activation_slnn(
@@ -276,7 +302,6 @@ if __name__ == '__main__':
 
     else:
         uuid = short_time_uuid()
-
         plt.scatter(
             np.linspace(
                 0,
