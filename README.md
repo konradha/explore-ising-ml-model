@@ -88,3 +88,7 @@ For the single-layer NN, results are remarkably similar.
     <td><img src="./predictor_slnn.png" alt="predictions and arguments to activation function with and without translation"></td>
   </tr>
 </table>
+
+
+The accompagnying presentation can be found [here](https://bit.ly/explain-ising-pres).
+(https://bit.ly/explain-ising-pres)
